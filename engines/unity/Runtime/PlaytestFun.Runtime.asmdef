@@ -1,0 +1,7 @@
+{
+  "name": "PlaytestFun.Runtime",
+  "rootNamespace": "PlaytestFunSdk",
+  "references": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true
+}

@@ -1,0 +1,26 @@
+#!/usr/bin/env python
+# Build: clone godot-cpp (matching your Godot 4.x) next to this file, then `scons platform=<windows|linux|macos>`.
+import os
+
+env = SConscript("godot-cpp/SConstruct")
+
+core = Dir("../..").abspath
+env.Append(CPPPATH=["src", os.path.join(core, "include"), os.path.join(core, "src")])
+
+# Objects for the shared core go to build/, not into the core tree.
+env.VariantDir("build/core", os.path.join(core, "src"), duplicate=False)
+sources = Glob("src/*.cpp") + Glob("build/core/*.cpp")
+
+if env["platform"] == "windows":
+    env.Append(LIBS=["winhttp", "shell32"])
+elif env["platform"] in ("macos", "ios"):
+    sources += Glob("build/core/*.mm")
+    env.Append(LINKFLAGS=["-framework", "Foundation"])
+elif env["platform"] == "linux":
+    env.Append(CPPDEFINES=["PTF_USE_CURL"], LIBS=["curl"])
+
+library = env.SharedLibrary(
+    "addons/playtestfun/bin/libplaytestfun{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+    source=sources,
+)
+Default(library)
