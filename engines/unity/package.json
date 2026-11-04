@@ -1,7 +1,14 @@
 {
   "name": "fun.playtest.sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "PLAYTEST.FUN SDK",
   "description": "Session play time by SteamID64 for playtest.fun (native C++ core).",
-  "unity": "2021.3"
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun#unity",
+  "changelogUrl": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun/blob/main/engines/unity/CHANGELOG.md",
+  "keywords": ["playtest", "analytics", "steam", "playtime"],
+  "author": {
+    "name": "PLAYTEST.FUN",
+    "url": "https://playtest.fun/developers"
+  }
 }

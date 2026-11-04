@@ -1,5 +1,5 @@
 // PLAYTEST.FUN native SDK for Unity (2021.3+).
-// Put the native plugin (playtestfun.dll / .bundle / .so, iOS static lib) under Assets/Plugins.
+// The package ships Runtime/Plugins/x86_64/playtestfun.dll; other platforms: see README.
 //
 // 1. Add this component to a GameObject in your first scene, paste the game key.
 // 2. Once Steam is up (Steamworks.NET shown):
@@ -7,9 +7,12 @@
 // Play time is measured natively and sent every minute and on quit; then playtest.fun opens.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
+
+[assembly: InternalsVisibleTo("PlaytestFun.Tests")]
 
 namespace PlaytestFunSdk
 {
@@ -158,7 +161,7 @@ namespace PlaytestFunSdk
             else Debug.Log(text);
         }
 
-        static IntPtr Utf8(string s)
+        internal static IntPtr Utf8(string s)
         {
             if (string.IsNullOrEmpty(s)) return IntPtr.Zero;
             var bytes = Encoding.UTF8.GetBytes(s);
@@ -174,7 +177,7 @@ namespace PlaytestFunSdk
             return Encoding.UTF8.GetString(b, 0, n < 0 ? b.Length : n);
         }
 
-        static class Native
+        internal static class Native
         {
 #if UNITY_IOS && !UNITY_EDITOR
             const string Lib = "__Internal";
@@ -214,6 +217,7 @@ namespace PlaytestFunSdk
             [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void ptf_flush();
             [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern int ptf_get_stats(out StatsC s);
             [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void ptf_shutdown();
+            [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern IntPtr ptf_version();
 
             [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern int ptf_goal(IntPtr key);
             [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] static extern int ptf_goal_value(IntPtr key, double value);
