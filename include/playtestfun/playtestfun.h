@@ -19,7 +19,7 @@
 #  define PTF_API
 #endif
 
-#define PTF_VERSION "1.0.1"
+#define PTF_VERSION "1.1.0"
 
 #ifdef __cplusplus
 extern "C" {

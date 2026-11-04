@@ -1,7 +1,8 @@
 // PLAYTEST.FUN native SDK for Unity (2021.3+).
 // The package ships Runtime/Plugins/x86_64/playtestfun.dll; other platforms: see README.
 //
-// 1. Add this component to a GameObject in your first scene, paste the game key.
+// 1. Paste the game key in Project Settings > PLAYTEST.FUN. The SDK then starts before the
+//    first scene loads. (Or turn that off and add this component to your first scene.)
 // 2. Once Steam is up (Steamworks.NET shown):
 //        PlaytestFunSdk.PlaytestFun.Instance.SetSteamId(SteamUser.GetSteamID().m_SteamID);
 // Play time is measured natively and sent every minute and on quit; then playtest.fun opens.
@@ -13,6 +14,7 @@ using System.Text;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo("PlaytestFun.Tests")]
+[assembly: InternalsVisibleTo("PlaytestFun.PlayTests")]
 
 namespace PlaytestFunSdk
 {
@@ -41,9 +43,63 @@ namespace PlaytestFunSdk
 
         bool running;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void AutoStart()
+        {
+            var settings = PlaytestFunSettings.Load();
+            if (settings != null && settings.startAutomatically) Bootstrap(settings);
+        }
+
+        /// <summary>
+        /// Starts the SDK from Project Settings > PLAYTEST.FUN. Use it when Start Automatically is off,
+        /// e.g. after the player consents. Returns the running instance, or null if not configured.
+        /// </summary>
+        public static PlaytestFun StartFromSettings()
+        {
+            var settings = PlaytestFunSettings.Load();
+            if (settings != null) return Bootstrap(settings);
+            Debug.LogWarning("playtest.fun: no settings yet, open Project Settings > PLAYTEST.FUN");
+            return null;
+        }
+
+        /// <summary>Creates the SDK object from settings, unless one is already running.</summary>
+        internal static PlaytestFun Bootstrap(PlaytestFunSettings settings)
+        {
+            if (Instance != null) return Instance;
+            if (string.IsNullOrEmpty(settings.gameKey))
+            {
+                Debug.LogWarning("playtest.fun: set the game key in Project Settings > PLAYTEST.FUN");
+                return null;
+            }
+            var go = new GameObject("PLAYTEST.FUN");
+            go.SetActive(false);  // Awake waits until the settings are applied
+            var sdk = go.AddComponent<PlaytestFun>();
+            sdk.Apply(settings);
+            go.SetActive(true);
+            return Instance == sdk ? sdk : null;
+        }
+
+        void Apply(PlaytestFunSettings s)
+        {
+            gameKey = s.gameKey;
+            playtestId = s.playtestId;
+            buildVersion = s.buildVersion;
+            heartbeatSeconds = s.heartbeatSeconds;
+            reportExceptions = s.reportExceptions;
+            openSiteOnQuit = s.openSiteOnQuit;
+            openSiteInEditor = s.openSiteInEditor;
+            exitUrl = s.exitUrl;
+        }
+
         void Awake()
         {
-            if (Instance != null) { Destroy(gameObject); return; }
+            if (Instance != null)
+            {
+                Debug.LogWarning("playtest.fun: the SDK is already running (Project Settings or another component); this one is ignored", this);
+                // Drop a dedicated object entirely, but never other components that share it.
+                if (GetComponents<Component>().Length == 2) Destroy(gameObject); else Destroy(this);
+                return;
+            }
             Instance = this;
             DontDestroyOnLoad(gameObject);
             running = Init();

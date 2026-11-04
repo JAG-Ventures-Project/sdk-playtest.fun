@@ -75,7 +75,7 @@ namespace PlaytestFunSdk.Tests
         [Test]
         public void NativeVersionMatchesPackage()
         {
-            Assert.AreEqual("1.0.1", Marshal.PtrToStringAnsi(PlaytestFun.Native.ptf_version()));
+            Assert.AreEqual("1.1.0", Marshal.PtrToStringAnsi(PlaytestFun.Native.ptf_version()));
         }
 
         [Test]

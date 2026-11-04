@@ -1,0 +1,9 @@
+{
+  "name": "PlaytestFun.Editor",
+  "rootNamespace": "PlaytestFunSdk.Editor",
+  "references": ["PlaytestFun.Runtime"],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true
+}

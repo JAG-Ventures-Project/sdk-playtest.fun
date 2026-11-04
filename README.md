@@ -67,10 +67,11 @@ This builds three targets: `playtestfun` (static, C++ API), `playtestfun_shared`
 
 1. In Package Manager, choose **+** → *Add package from git URL* and paste:
    ```
-   https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.0.1
+   https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.1.0
    ```
    The package includes the Windows x64 plugin. For other platforms, run `cmake -P tools/build_unity.cmake` on that platform. It builds the plugin with the static CRT and copies it into `engines/unity/Runtime/Plugins/`. See [engines/unity/README.md](engines/unity/README.md).
-2. Add the `PlaytestFunSdk.PlaytestFun` component to a GameObject in your first scene and paste the game key.
+2. Open Project Settings → PLAYTEST.FUN and paste the game key. The SDK starts before the first scene loads, so no scene object is needed.
+   To start it yourself (e.g. after player consent), turn off *Start Automatically* and call `PlaytestFunSdk.PlaytestFun.StartFromSettings()`.
 3. Once Steam is up, pass the player's id:
    ```csharp
    PlaytestFunSdk.PlaytestFun.Instance.SetSteamId(SteamUser.GetSteamID().m_SteamID);
