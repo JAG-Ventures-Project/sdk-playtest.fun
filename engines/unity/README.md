@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.1
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.2
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.1"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.2"
 ```
 
-Drop `#v1.5.1` to track `main`.
+Drop `#v1.5.2` to track `main`.
 
 ## Use
 
@@ -127,8 +127,14 @@ Both are off by default; turn them on in Project Settings → PLAYTEST.FUN.
   the previous run's Player log (`Player-prev.log`) is sent as a `CRASH` event with the fingerprint
   `abnormal_exit`, the build version and the time that run started. A log over 20 KB keeps its last
   20 KB, where the crash is. On mobile the marker is removed while the app is paused, so the OS
-  closing a backgrounded app is not reported. The log can contain hardware details and file paths:
-  tell your testers before turning it on.
+  closing a backgrounded app is not reported.
+
+Personal data is removed before any crash text is queued: the log, exception messages, stacks and
+fingerprints (also of your own `Crash` calls). File paths keep only the file name
+(`'C:/Users/ali/AppData/.../Managed'` → `'<path>/Managed'`), and the user, computer and device names,
+SteamIDs and e-mail addresses become `<name>`, `<steamid>` and `<email>`. Hardware and driver lines
+(GPU, driver version, VRAM, CPU count) stay. Fingerprints without paths also group the same crash
+across players.
 
 Report your own crashes with `PlaytestFun.Instance?.Crash("SaveCorrupt@LoadGame", message, stack)`.
 Crash events are written to disk before the call returns, and they are sent for every player,

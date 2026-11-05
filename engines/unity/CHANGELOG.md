@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2] - 2026-11-05
+
+- Personal data is removed from crash text before it is queued (the Player log from *Send Log After
+  Crash*, exceptions from *Report Exceptions*, and `Crash` calls): file paths keep only the file name;
+  user, computer and device names, SteamIDs and e-mail addresses are replaced. Hardware and driver
+  lines stay. Fingerprints no longer carry paths, so the same crash groups across players.
+
 ## [1.5.1] - 2026-11-05
 
 - The event queue is capped at 1 MB as well as 1000 events (oldest dropped first, crashes last), and

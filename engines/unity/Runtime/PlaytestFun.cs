@@ -118,6 +118,7 @@ namespace PlaytestFunSdk
                 return;
             }
             running = Init();
+            if (running) Redact.Init(SystemInfo.deviceName);  // before any crash text is queued
             if (running && reportExceptions) Application.logMessageReceivedThreaded += OnUnityLog;
             // The Editor's log is the whole Editor's, and leaving Play mode counts as quitting: builds only.
             if (running && sendLogAfterCrash && !Application.isEditor) StartCrashDetection();
@@ -132,7 +133,7 @@ namespace PlaytestFunSdk
             if (previous != null)
             {
                 var log = CrashMarker.ReadTail(CrashMarker.PreviousLogPath(Application.consoleLogPath));
-                Native.ptf_crash(CrashMarker.Fingerprint, previous.Message, log);
+                Native.ptf_crash(CrashMarker.Fingerprint, Redact.Scrub(previous.Message), Redact.Scrub(log));
             }
             CrashMarker.Write(markerPath, BuildVersion);
         }
@@ -154,8 +155,9 @@ namespace PlaytestFunSdk
         public bool TestResult(int testId, bool passed, string message = null) =>
             running && Native.ptf_test_result(testId, passed ? 1 : 0, message) == 1;
 
+        /// <summary>Paths, user/computer/device names and SteamIDs are removed from all three before queuing.</summary>
         public bool Crash(string fingerprint, string message = null, string stack = null) =>
-            running && Native.ptf_crash(fingerprint, message, stack) == 1;
+            running && Native.ptf_crash(Redact.Scrub(fingerprint), Redact.Scrub(message), Redact.Scrub(stack)) == 1;
 
         /// <summary>Any event type; dataJson is a JSON object.</summary>
         public bool Event(string eventType, string status, string dataJson) =>
@@ -194,14 +196,15 @@ namespace PlaytestFunSdk
 
         string BuildVersion => string.IsNullOrEmpty(buildVersion) ? Application.version : buildVersion;
 
-        // Any thread. Fingerprint = exception line + top frame, stable across runs.
+        // Any thread. Fingerprint = exception line + top frame, stable across runs and players (paths removed).
         void OnUnityLog(string condition, string stackTrace, LogType type)
         {
             if (type != LogType.Exception || !running) return;
             var frame = stackTrace ?? "";
             int nl = frame.IndexOf('\n');
             if (nl >= 0) frame = frame.Substring(0, nl);
-            Native.ptf_crash(condition + "@" + frame.Trim(), condition, stackTrace);
+            condition = Redact.Scrub(condition);
+            Native.ptf_crash(condition + "@" + Redact.Scrub(frame.Trim()), condition, Redact.Scrub(stackTrace));
         }
 
         void OnApplicationQuit()
