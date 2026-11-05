@@ -30,6 +30,20 @@ namespace PlaytestFunSdk.Tests
         }
 
         [Test]
+        public void ParsesTheServerReplyShape()
+        {
+            // As GET /sdk/game/playtests answers today: "label" and a null target.
+            var reply = PlaytestFunServer.Parse(@"{""success"":true,""data"":[{""id"":""d1"",""title"":""Playtest f1"",
+                ""versionId"":""v1"",""versionLabel"":""f1"",""publishState"":""published"",
+                ""goals"":[{""key"":""kill_1000_monster"",""label"":""Kill 1000 monster"",""target"":null}]}]}");
+            var goal = reply.data[0].goals[0];
+            Assert.AreEqual("kill_1000_monster", goal.Key);
+            Assert.AreEqual("Kill 1000 monster", goal.Title);
+            Assert.AreEqual(0, goal.Target);
+            StringAssert.Contains("/// <summary>Kill 1000 monster</summary>", PlaytestFunCodegen.Generate(reply.data[0]));
+        }
+
+        [Test]
         public void ParsesTheCurrentEmptyReply()
         {
             var reply = PlaytestFunServer.Parse(@"{""success"":true,""data"":[{""id"":""x"",""title"":""t"",""goals"":[]}]}");

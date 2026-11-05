@@ -40,11 +40,11 @@ namespace PlaytestFunSdk.Editor
     [Serializable]
     sealed class Goal
     {
-        public string key, goalKey, slug, id, title, name, description;
+        public string key, goalKey, slug, id, label, title, name, description;
         public double target, targetValue;
 
         public string Key => First(key, goalKey, slug, id);
-        public string Title => First(title, name, Key);
+        public string Title => First(label, title, name, Key);
         public double Target => target != 0 ? target : targetValue;
 
         static string First(params string[] values) => values.FirstOrDefault(v => !string.IsNullOrEmpty(v)) ?? "";

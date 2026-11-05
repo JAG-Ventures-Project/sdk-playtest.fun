@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.1] - 2026-11-05
+
+- Goal titles are read from the server's `label` field, so the settings page and the generated
+  constants show "Kill 1000 monster" instead of the key.
+
 ## [1.2.0] - 2026-11-05
 
 - Project Settings > PLAYTEST.FUN lists the game's playtests and goals from the server and can set the Playtest Id.

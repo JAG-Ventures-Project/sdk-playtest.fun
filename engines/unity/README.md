@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.0
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.1
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.0"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.1"
 ```
 
-Drop `#v1.2.0` to track `main`.
+Drop `#v1.2.1` to track `main`.
 
 ## Use
 
