@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.2] - 2026-11-05
+
+- Goal constants are generated in the `PlaytestFunSdk` namespace by default. Projects that already saved
+  generation options keep theirs; an empty namespace still means the global namespace.
+
 ## [1.2.1] - 2026-11-05
 
 - Goal titles are read from the server's `label` field, so the settings page and the generated

@@ -11,6 +11,7 @@ namespace PlaytestFunSdk.Editor
     sealed class PlaytestFunEditorSettings : ScriptableSingleton<PlaytestFunEditorSettings>
     {
         internal const string DefaultPath = "Assets/PlaytestFun/PlaytestFunGoals.cs";
+        internal const string DefaultNamespace = "PlaytestFunSdk";
         internal const string DefaultClassName = "PlaytestFunGoals";
 
         [Tooltip("Fetch playtests and goals once per editor session when this page opens.")]
@@ -18,12 +19,12 @@ namespace PlaytestFunSdk.Editor
         [Tooltip("Where the goal constants are written. Must be under Assets/ and end in .cs.")]
         public string goalsPath = DefaultPath;
         [Tooltip("Namespace of the generated class. Empty = global namespace.")]
-        public string goalsNamespace = "";
+        public string goalsNamespace = DefaultNamespace;
         public string goalsClassName = DefaultClassName;
         [SerializeField, HideInInspector] internal string lastGeneratedPath = "";
 
         internal string OutputPath => ValidatePath(goalsPath) == null ? goalsPath : DefaultPath;
-        internal string Namespace => ValidateNamespace(goalsNamespace) == null ? goalsNamespace ?? "" : "";
+        internal string Namespace => ValidateNamespace(goalsNamespace) == null ? goalsNamespace ?? "" : DefaultNamespace;
         internal string ClassName => ValidateClassName(goalsClassName) == null ? goalsClassName : DefaultClassName;
 
         internal void Save() => Save(true);
