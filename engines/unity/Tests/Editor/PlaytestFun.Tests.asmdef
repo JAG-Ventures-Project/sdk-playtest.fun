@@ -3,6 +3,7 @@
   "rootNamespace": "PlaytestFunSdk.Tests",
   "references": [
     "PlaytestFun.Runtime",
+    "PlaytestFun.Editor",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

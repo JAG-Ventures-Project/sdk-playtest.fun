@@ -229,6 +229,7 @@ namespace PlaytestFunSdk
 
         static string CString(byte[] b)
         {
+            if (b == null) return "";  // not filled in when the SDK is not running
             int n = Array.IndexOf(b, (byte)0);
             return Encoding.UTF8.GetString(b, 0, n < 0 ? b.Length : n);
         }

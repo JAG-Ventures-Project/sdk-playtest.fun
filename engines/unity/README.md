@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.1.0
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.0
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.1.0"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.0"
 ```
 
-Drop `#v1.1.0` to track `main`.
+Drop `#v1.2.0` to track `main`.
 
 ## Use
 
@@ -29,6 +29,18 @@ Drop `#v1.1.0` to track `main`.
    ```csharp
    PlaytestFunSdk.PlaytestFun.Instance.SetSteamId(SteamUser.GetSteamID().m_SteamID);
    ```
+
+3. Report goals with constants instead of hand-typed keys. Add the goals on playtest.fun, then run
+   **Tools → PLAYTEST.FUN → Fetch and Generate Goals**. It writes `Assets/PlaytestFun/PlaytestFunGoals.cs`
+   for the *Playtest Id* (or the game's only playtest):
+   ```csharp
+   PlaytestFunSdk.PlaytestFun.Instance.Goal(PlaytestFunGoals.FinishTutorial);
+   PlaytestFunSdk.PlaytestFun.Instance.Goal(PlaytestFunGoals.CollectPoints, score);
+   ```
+   Run it again whenever the goals change. A removed goal then becomes a compile error, not a silently wrong key.
+   Project Settings → PLAYTEST.FUN shows each playtest's goals, warns when the generated file is out of date,
+   and sets the output path, namespace and class name (saved to `ProjectSettings/PlaytestFunEditorSettings.asset`).
+   The generated file is meant to be committed; it is never overwritten unless PLAYTEST.FUN wrote it.
 
 ## Platforms
 

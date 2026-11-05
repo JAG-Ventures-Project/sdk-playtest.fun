@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0] - 2026-11-05
+
+- Project Settings > PLAYTEST.FUN lists the game's playtests and goals from the server and can set the Playtest Id.
+- Goal constants: generate a C# class with one constant per goal key (output path, namespace and class name
+  are options, saved to `ProjectSettings/PlaytestFunEditorSettings.asset`).
+- *Tools > PLAYTEST.FUN > Fetch and Generate Goals* fetches and regenerates in one step.
+- The fetched playtests are cached per game key in `Library/PlaytestFun/` and fetched once per editor
+  session when the settings page opens.
+- The settings page warns when the generated constants are out of date, with a *Generate again* button.
+- Live session stats and a *Send now* button on the `PlaytestFun` component while playing.
+
 ## [1.1.0] - 2026-11-04
 
 - Project Settings > PLAYTEST.FUN: settings live in `Assets/Resources/PlaytestFunSettings.asset`.

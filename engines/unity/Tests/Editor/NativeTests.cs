@@ -140,6 +140,24 @@ namespace PlaytestFunSdk.Tests
             Assert.AreEqual(0, PlaytestFun.Native.ptf_get_stats(out _));
         }
 
+        [Test]
+        public void ComponentStatsAreEmptyWhenNotRunning()
+        {
+            // In edit mode Awake never runs, so the component has no native session.
+            var go = new UnityEngine.GameObject("PlaytestFun");
+            try
+            {
+                var stats = go.AddComponent<PlaytestFun>().GetStats();
+                Assert.AreEqual("", stats.SessionId);
+                Assert.AreEqual("", stats.LastError);
+                Assert.AreEqual(0, stats.LocalSessionSeconds);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
+
         static string CString(byte[] b)
         {
             int n = Array.IndexOf(b, (byte)0);
