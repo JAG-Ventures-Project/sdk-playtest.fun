@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0] - 2026-11-05
+
+- *Send Log After Crash* setting (builds only, off by default): when a run ends without quitting
+  (native crash, freeze, killed process), the next start sends that run's Player log as a `CRASH`
+  event with the fingerprint `abnormal_exit`. Logs over 20 KB keep their last 20 KB.
+- README: a Crash reports section.
+
 ## [1.4.0] - 2026-11-05
 
 - Generating the goal constants also sets *Build Version* to the playtest's version label, and the

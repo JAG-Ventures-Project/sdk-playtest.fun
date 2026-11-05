@@ -32,6 +32,8 @@ namespace PlaytestFunSdk
         [SerializeField] uint heartbeatSeconds = 60;
         [Tooltip("Send unhandled exceptions as CRASH events (one per fingerprint while queued).")]
         [SerializeField] bool reportExceptions = false;
+        [Tooltip("Builds only. When a run ends without quitting (native crash, freeze, killed process), the next start sends the end of its Player log as a CRASH event.")]
+        [SerializeField] bool sendLogAfterCrash = false;
         [SerializeField] bool openSiteOnQuit = true;
         [SerializeField] bool openSiteInEditor = false;
         [SerializeField] string exitUrl = "https://playtest.fun";
@@ -92,6 +94,7 @@ namespace PlaytestFunSdk
             buildVersion = s.buildVersion;
             heartbeatSeconds = s.heartbeatSeconds;
             reportExceptions = s.reportExceptions;
+            sendLogAfterCrash = s.sendLogAfterCrash;
             openSiteOnQuit = s.openSiteOnQuit;
             openSiteInEditor = s.openSiteInEditor;
             exitUrl = s.exitUrl;
@@ -116,6 +119,22 @@ namespace PlaytestFunSdk
             }
             running = Init();
             if (running && reportExceptions) Application.logMessageReceivedThreaded += OnUnityLog;
+            // The Editor's log is the whole Editor's, and leaving Play mode counts as quitting: builds only.
+            if (running && sendLogAfterCrash && !Application.isEditor) StartCrashDetection();
+        }
+
+        string markerPath;  // set while crash detection is on
+
+        void StartCrashDetection()
+        {
+            markerPath = Application.persistentDataPath + "/playtestfun/running";
+            var previous = CrashMarker.Read(markerPath);
+            if (previous != null)
+            {
+                var log = CrashMarker.ReadTail(CrashMarker.PreviousLogPath(Application.consoleLogPath));
+                Native.ptf_crash(CrashMarker.Fingerprint, previous.Message, log);
+            }
+            CrashMarker.Write(markerPath, BuildVersion);
         }
 
         public bool SetSteamId(ulong steamId64) => running && Native.ptf_set_steam_id(steamId64) == 1;
@@ -161,7 +180,19 @@ namespace PlaytestFunSdk
             };
         }
 
-        void OnApplicationPause(bool paused) { if (running) Native.ptf_set_paused(paused ? 1 : 0); }
+        void OnApplicationPause(bool paused)
+        {
+            if (!running) return;
+            Native.ptf_set_paused(paused ? 1 : 0);
+            // Mobile OSes kill paused apps without a quit: that is not a crash.
+            if (markerPath != null)
+            {
+                if (paused) CrashMarker.Clear(markerPath);
+                else CrashMarker.Write(markerPath, BuildVersion);
+            }
+        }
+
+        string BuildVersion => string.IsNullOrEmpty(buildVersion) ? Application.version : buildVersion;
 
         // Any thread. Fingerprint = exception line + top frame, stable across runs.
         void OnUnityLog(string condition, string stackTrace, LogType type)
@@ -178,6 +209,7 @@ namespace PlaytestFunSdk
             Application.logMessageReceivedThreaded -= OnUnityLog;
             if (!running) return;
             running = false;
+            if (markerPath != null) CrashMarker.Clear(markerPath);
             Native.ptf_shutdown(); // bounded final send
             if (openSiteOnQuit && (!Application.isEditor || openSiteInEditor)) Application.OpenURL(exitUrl);
         }
@@ -186,6 +218,7 @@ namespace PlaytestFunSdk
         {
             if (Instance != this) return;
             Application.logMessageReceivedThreaded -= OnUnityLog;
+            if (markerPath != null) CrashMarker.Clear(markerPath);
             if (running) { running = false; Native.ptf_shutdown(); }
             Instance = null;
         }
@@ -200,7 +233,7 @@ namespace PlaytestFunSdk
                 cfg.game_key = strings[0] = Utf8(gameKey);
                 cfg.playtest_id = strings[1] = Utf8(playtestId);
                 cfg.storage_dir = strings[2] = Utf8(Application.persistentDataPath + "/playtestfun");
-                cfg.build_version = strings[3] = Utf8(string.IsNullOrEmpty(buildVersion) ? Application.version : buildVersion);
+                cfg.build_version = strings[3] = Utf8(BuildVersion);
                 cfg.open_url_on_shutdown = 0; // Application.OpenURL works on every platform
                 cfg.heartbeat_seconds = heartbeatSeconds;
                 cfg.log = Marshal.GetFunctionPointerForDelegate(LogCallback);

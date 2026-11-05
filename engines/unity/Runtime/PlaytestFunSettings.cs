@@ -22,6 +22,8 @@ namespace PlaytestFunSdk
         public uint heartbeatSeconds = 60;
         [Tooltip("Send unhandled exceptions as CRASH events (one per fingerprint while queued).")]
         public bool reportExceptions = false;
+        [Tooltip("Builds only. When a run ends without quitting (native crash, freeze, killed process), the next start sends the end of its Player log as a CRASH event. The log can contain hardware details and file paths.")]
+        public bool sendLogAfterCrash = false;
         public bool openSiteOnQuit = true;
         public bool openSiteInEditor = false;
         public string exitUrl = "https://playtest.fun";

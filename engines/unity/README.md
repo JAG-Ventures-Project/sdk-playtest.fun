@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.4.0
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.0
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.4.0"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.0"
 ```
 
-Drop `#v1.4.0` to track `main`.
+Drop `#v1.5.0` to track `main`.
 
 ## Use
 
@@ -113,6 +113,26 @@ If the goal has no target on playtest.fun, send it once when it is reached inste
   with *Run In Editor* off. Use `?.` because `Instance` is null until the SDK has started.
 - While playing in the Editor, the `PlaytestFun` object's Inspector shows *Accepted into playtest*,
   the events not sent yet, and the last HTTP status.
+
+## Crash reports
+
+Both are off by default; turn them on in Project Settings → PLAYTEST.FUN.
+
+- **Report Exceptions**: every unhandled C# exception is sent as a `CRASH` event with its message
+  and stack trace. The fingerprint is the exception line plus the top stack frame, so the same bug
+  groups together, and an exception thrown every frame is queued only once. `Debug.LogError` is not sent.
+- **Send Log After Crash** (builds only): catches what C# never sees — a native crash, a freeze
+  ended from Task Manager, a power cut. While the game runs, a marker file sits in
+  `Application.persistentDataPath/playtestfun/`; a normal quit removes it. When the next start finds it,
+  the previous run's Player log (`Player-prev.log`) is sent as a `CRASH` event with the fingerprint
+  `abnormal_exit`, the build version and the time that run started. A log over 20 KB keeps its last
+  20 KB, where the crash is. On mobile the marker is removed while the app is paused, so the OS
+  closing a backgrounded app is not reported. The log can contain hardware details and file paths:
+  tell your testers before turning it on.
+
+Report your own crashes with `PlaytestFun.Instance?.Crash("SaveCorrupt@LoadGame", message, stack)`.
+Crash events are written to disk before the call returns, and they are sent for every player,
+accepted or not.
 
 ## Platforms
 
