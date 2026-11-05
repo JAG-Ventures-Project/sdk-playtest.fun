@@ -132,8 +132,9 @@ namespace PlaytestFunSdk
             var previous = CrashMarker.Read(markerPath);
             if (previous != null)
             {
-                var log = CrashMarker.ReadTail(CrashMarker.PreviousLogPath(Application.consoleLogPath));
-                Native.ptf_crash(CrashMarker.Fingerprint, Redact.Scrub(previous.Message), Redact.Scrub(log));
+                var raw = CrashMarker.ReadTail(CrashMarker.PreviousLogPath(Application.consoleLogPath), CrashMarker.ReadBytes);
+                var log = CrashMarker.TailBytes(Redact.Scrub(CrashMarker.StripNoise(raw)));
+                Native.ptf_crash(CrashMarker.Fingerprint, Redact.Scrub(previous.Message), log);
             }
             CrashMarker.Write(markerPath, BuildVersion);
         }

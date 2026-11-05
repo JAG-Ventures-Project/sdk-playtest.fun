@@ -1,6 +1,6 @@
 {
   "name": "fun.playtest.sdk",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "displayName": "PLAYTEST.FUN SDK",
   "description": "Session play time by SteamID64 for playtest.fun (native C++ core).",
   "unity": "2021.3",

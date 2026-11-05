@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.2
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.3
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.2"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.3"
 ```
 
-Drop `#v1.5.2` to track `main`.
+Drop `#v1.5.3` to track `main`.
 
 ## Use
 
@@ -125,8 +125,9 @@ Both are off by default; turn them on in Project Settings → PLAYTEST.FUN.
   ended from Task Manager, a power cut. While the game runs, a marker file sits in
   `Application.persistentDataPath/playtestfun/`; a normal quit removes it. When the next start finds it,
   the previous run's Player log (`Player-prev.log`) is sent as a `CRASH` event with the fingerprint
-  `abnormal_exit`, the build version and the time that run started. A log over 20 KB keeps its last
-  20 KB, where the crash is. On mobile the marker is removed while the app is paused, so the OS
+  `abnormal_exit`, the build version and the time that run started. The list of loaded DLLs that
+  Unity writes on a native crash (~40 KB) is dropped, so the game's last lines, the crash and the
+  stack trace arrive whole. A log still over 20 KB keeps its last 20 KB, where the crash is. On mobile the marker is removed while the app is paused, so the OS
   closing a backgrounded app is not reported.
 
 Personal data is removed before any crash text is queued: the log, exception messages, stacks and

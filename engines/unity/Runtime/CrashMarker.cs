@@ -6,6 +6,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace PlaytestFunSdk
 {
@@ -15,6 +16,29 @@ namespace PlaytestFunSdk
 
         /// <summary>The native core keeps the first 20000 bytes of a stack; the log tail stays under that.</summary>
         public const int MaxLogBytes = 20000;
+
+        /// <summary>How much of the log end is read before the noise is stripped and it is cut to MaxLogBytes.</summary>
+        public const int ReadBytes = 512 * 1024;
+
+        // Unity's Windows crash report lists every loaded DLL (~200 lines, ~40 KB: installed software,
+        // full paths) and symbol lookup noise. Dropped so the game's last lines and the stack fit.
+        static readonly Regex Noise = new Regex(
+            @"^(?:.*, SymType: '.*|SymInit: .*|\s*ERROR: SymGetSymFromAddr64.*)(?:\r?\n|$)",
+            RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.CultureInvariant);
+
+        public static string StripNoise(string log) => string.IsNullOrEmpty(log) ? log ?? "" : Noise.Replace(log, "");
+
+        /// <summary>The last <paramref name="maxBytes"/> UTF-8 bytes of the text, starting at a whole line.</summary>
+        public static string TailBytes(string text, int maxBytes = MaxLogBytes)
+        {
+            if (string.IsNullOrEmpty(text) || Encoding.UTF8.GetByteCount(text) <= maxBytes) return text ?? "";
+            var bytes = Encoding.UTF8.GetBytes(text);
+            int start = bytes.Length - maxBytes;
+            int nl = Array.IndexOf(bytes, (byte)'\n', start);
+            int from = nl >= 0 ? nl + 1 : start;
+            while (from < bytes.Length && (bytes[from] & 0xC0) == 0x80) ++from;  // never mid-character
+            return Encoding.UTF8.GetString(bytes, from, bytes.Length - from);
+        }
 
         /// <summary>What the previous run left behind, or null if it quit normally (or never ran).</summary>
         public sealed class PreviousRun

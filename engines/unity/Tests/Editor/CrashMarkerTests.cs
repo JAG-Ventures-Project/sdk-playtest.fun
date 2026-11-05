@@ -80,6 +80,66 @@ namespace PlaytestFunSdk.Tests
             Assert.AreEqual(-1, tail.IndexOf('\uFFFD'), "no character cut in half");  // ordinal: culture compare ignores U+FFFD
         }
 
+        // The shape of a real Windows native crash log: last game lines, the crash, the DLL list, the stack.
+        static string NativeCrashLog(int modules)
+        {
+            var sb = new StringBuilder();
+            sb.Append("Driver:          32.0.15.7329\r\n");
+            sb.Append("Game: entering the beach\r\n");
+            sb.Append("Forcing a crash -- Intentionally Dereferencing NULL pointer\r\n");
+            sb.Append("Crash!!!\r\n");
+            sb.Append("SymInit: Symbol-SearchPath: '.;C:\\Users\\ali\\Game;C:\\WINDOWS;', symOptions: 534, UserName: 'ali'\r\n");
+            sb.Append("OS-Version: 10.0.0\r\n");
+            for (int i = 0; i < modules; i++)
+                sb.Append("C:\\WINDOWS\\SYSTEM32\\mod").Append(i).Append(".dll:mod").Append(i)
+                  .Append(".dll (00007FF880540000), size: 53248 (result: 0), SymType: '-exported-', PDB: 'C:\\WINDOWS\\SYSTEM32\\mod")
+                  .Append(i).Append(".dll', fileVersion: 10.0.26100.7705\r\n");
+            sb.Append("\r\n========== OUTPUTTING STACK TRACE ==================\r\n\r\n");
+            sb.Append("  ERROR: SymGetSymFromAddr64, GetLastError: 'Attempt to access invalid address.' (Address: 00007FFFD7BBBA09)\r\n");
+            sb.Append("0x00007FFFD7BBBA09 (UnityPlayer) (function-name not available)\r\n");
+            sb.Append("0x000001A7F1C3F943 (Mono JIT Code) Player:Update ()\r\n");
+            sb.Append("========== END OF STACKTRACE ===========\r\n");
+            return sb.ToString();
+        }
+
+        [Test]
+        public void TheDllListAndSymbolNoiseAreDropped()
+        {
+            var log = CrashMarker.StripNoise(NativeCrashLog(232));
+            StringAssert.DoesNotContain("SymType", log);
+            StringAssert.DoesNotContain("SymInit", log);
+            StringAssert.DoesNotContain("SymGetSymFromAddr64", log);
+            StringAssert.DoesNotContain("UserName", log);
+            StringAssert.Contains("Game: entering the beach\r\nForcing a crash", log);
+            StringAssert.Contains("Crash!!!\r\nOS-Version: 10.0.0\r\n", log);
+            StringAssert.Contains("Driver:          32.0.15.7329", log);
+            StringAssert.Contains("(UnityPlayer) (function-name not available)\r\n0x000001A7F1C3F943 (Mono JIT Code) Player:Update ()", log);
+            Assert.Less(Encoding.UTF8.GetByteCount(log), 1000);
+        }
+
+        [Test]
+        public void ANativeCrashLogNowFitsWhole()
+        {
+            var path = Path.Combine(dir, "Player-prev.log");
+            File.WriteAllText(path, NativeCrashLog(232));
+            Assert.Greater(new FileInfo(path).Length, CrashMarker.MaxLogBytes, "the raw log would have been cut");
+
+            var log = CrashMarker.TailBytes(CrashMarker.StripNoise(CrashMarker.ReadTail(path, CrashMarker.ReadBytes)));
+            StringAssert.StartsWith("Driver:", log);
+            StringAssert.Contains("Crash!!!", log);
+            StringAssert.EndsWith("END OF STACKTRACE ===========\r\n", log);
+        }
+
+        [Test]
+        public void TailBytesCutsAtALine()
+        {
+            Assert.AreEqual("short", CrashMarker.TailBytes("short", 100));
+            Assert.AreEqual("ccc\n", CrashMarker.TailBytes("aaa\nbbb\nccc\n", 6));
+            var tail = CrashMarker.TailBytes(new string('ü', 50), 11);  // no newline: still whole characters
+            Assert.AreEqual(-1, tail.IndexOf('\uFFFD'));
+            Assert.LessOrEqual(Encoding.UTF8.GetByteCount(tail), 11);
+        }
+
         [Test]
         public void AMissingLogIsEmpty()
         {
