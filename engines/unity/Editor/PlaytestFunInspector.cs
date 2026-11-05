@@ -14,7 +14,12 @@ namespace PlaytestFunSdk.Editor
         public override void OnInspectorGUI()
         {
             var sdk = (PlaytestFun)target;
-            if (Application.isPlaying && sdk == PlaytestFun.Instance)
+            if (Application.isPlaying && sdk == PlaytestFun.Instance && !sdk.IsRunning)
+            {
+                EditorGUILayout.HelpBox("Not running: nothing is sent. In the Editor this is usually Run In Editor being off.", MessageType.Info);
+                EditorGUILayout.Space();
+            }
+            else if (Application.isPlaying && sdk == PlaytestFun.Instance)
             {
                 DrawStats(sdk.GetStats());
                 if (GUILayout.Button("Send now")) sdk.Flush();

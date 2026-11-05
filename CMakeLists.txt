@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(playtestfun VERSION 1.1.0 LANGUAGES CXX)
+project(playtestfun VERSION 1.3.0 LANGUAGES CXX)
 
 if(APPLE)
   enable_language(OBJCXX)

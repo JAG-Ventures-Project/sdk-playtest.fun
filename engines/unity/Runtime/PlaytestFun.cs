@@ -23,6 +23,8 @@ namespace PlaytestFunSdk
         public static PlaytestFun Instance { get; private set; }
 
         [SerializeField] string gameKey = "phub_gk_YOUR_GAME_KEY";
+        [Tooltip("Off: in the Editor nothing is sent (the calls below just return false). Builds always run.")]
+        [SerializeField] bool runInEditor = true;
         [Tooltip("Needed only when a player is in more than one playtest of the game.")]
         [SerializeField] string playtestId = "";
         [Tooltip("Empty = Application.version. Prefixes the session id and tags crashes.")]
@@ -42,6 +44,9 @@ namespace PlaytestFunSdk
         }
 
         bool running;
+
+        /// <summary>False when not configured, when the key was rejected at start, or in the Editor with Run In Editor off.</summary>
+        public bool IsRunning => running;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void AutoStart()
@@ -82,6 +87,7 @@ namespace PlaytestFunSdk
         void Apply(PlaytestFunSettings s)
         {
             gameKey = s.gameKey;
+            runInEditor = s.runInEditor;
             playtestId = s.playtestId;
             buildVersion = s.buildVersion;
             heartbeatSeconds = s.heartbeatSeconds;
@@ -102,6 +108,12 @@ namespace PlaytestFunSdk
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            if (Application.isEditor && !runInEditor)
+            {
+                // Instance stays set, so game code calling it needs no Editor checks; every call returns false.
+                Debug.Log("playtest.fun: not running in the Editor (Run In Editor is off); nothing is sent", this);
+                return;
+            }
             running = Init();
             if (running && reportExceptions) Application.logMessageReceivedThreaded += OnUnityLog;
         }

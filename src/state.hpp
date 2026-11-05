@@ -121,6 +121,8 @@ void SendOldSessions(State& s);
 bool EnqueueEventLocked(State& s, QueuedEvent ev);
 void LoadEvents(State& s);
 void PersistEvents(State& s);
+// A goal of the current player while the server says that player is not accepted: never counted.
+bool GoalNotCountedLocked(const State& s, const QueuedEvent& ev, const std::string& steam_id);
 // Sends queued events in order until empty, a failure, max_count or the deadline.
 // Returns when to try again, or zero when nothing is waiting to be sent.
 Clock::duration DrainEvents(State& s, Clock::time_point deadline, int max_count);

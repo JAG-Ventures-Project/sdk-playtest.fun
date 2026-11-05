@@ -12,6 +12,7 @@ namespace PlaytestFunSdk.Tests
             try
             {
                 Assert.IsTrue(s.startAutomatically);
+                Assert.IsTrue(s.runInEditor, "turning it off is a choice; the default keeps Editor play sessions working");
                 Assert.IsEmpty(s.gameKey, "no placeholder key, so an unconfigured project never calls the API");
                 Assert.AreEqual(60u, s.heartbeatSeconds);
                 Assert.IsTrue(s.openSiteOnQuit);

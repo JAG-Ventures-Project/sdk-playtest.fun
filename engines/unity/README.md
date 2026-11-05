@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.2
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.3.0
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.2.2"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.3.0"
 ```
 
-Drop `#v1.2.2` to track `main`.
+Drop `#v1.3.0` to track `main`.
 
 ## Use
 
@@ -25,24 +25,89 @@ Drop `#v1.2.2` to track `main`.
      `PlaytestFunSdk.PlaytestFun.StartFromSettings()`.
    - Adding the `PlaytestFun` component to a scene still works when *Start Automatically* is off.
      If the SDK is already running, a scene component is ignored with a warning.
+   - Turn off *Run In Editor* so your own Play mode sessions in the Editor never reach playtest.fun.
+     `PlaytestFun.Instance` still exists there, so game code needs no Editor checks; every call
+     returns `false` and nothing is sent. Builds always run.
 2. Once Steam is up, pass the player's id:
    ```csharp
    PlaytestFunSdk.PlaytestFun.Instance.SetSteamId(SteamUser.GetSteamID().m_SteamID);
    ```
+3. Report goals (see [Goals](#goals)).
 
-3. Report goals with constants instead of hand-typed keys. Add the goals on playtest.fun, then run
-   **Tools → PLAYTEST.FUN → Fetch and Generate Goals**. It writes `Assets/PlaytestFun/PlaytestFunGoals.cs`
-   for the *Playtest Id* (or the game's only playtest), in the `PlaytestFunSdk` namespace:
-   ```csharp
-   using PlaytestFunSdk;
+## Goals
 
-   PlaytestFun.Instance?.Goal(PlaytestFunGoals.FinishTutorial);
-   PlaytestFun.Instance?.Goal(PlaytestFunGoals.CollectPoints, score);
-   ```
-   Run it again whenever the goals change. A removed goal then becomes a compile error, not a silently wrong key.
-   Project Settings → PLAYTEST.FUN shows each playtest's goals, warns when the generated file is out of date,
-   and sets the output path, namespace and class name (saved to `ProjectSettings/PlaytestFunEditorSettings.asset`).
-   The generated file is meant to be committed; it is never overwritten unless PLAYTEST.FUN wrote it.
+### Generate the goal constants
+
+Add the goals to the playtest on playtest.fun, then run **Tools → PLAYTEST.FUN → Fetch and Generate Goals**.
+It writes `Assets/PlaytestFun/PlaytestFunGoals.cs` for the *Playtest Id* (or the game's only playtest),
+with one constant per goal key:
+
+```csharp
+namespace PlaytestFunSdk
+{
+    public static class PlaytestFunGoals
+    {
+        public const string PlaytestId = "11111111-...";
+
+        /// <summary>Reach the beach</summary>
+        public const string ReachTheBeach = "reach_the_beach";
+
+        /// <summary>Kill 1000 monster (target 1000)</summary>
+        public const string Kill1000Monster = "kill_1000_monster";
+        public const double Kill1000MonsterTarget = 1000;
+    }
+}
+```
+
+- Run it again whenever the goals change. A removed or renamed goal then becomes a compile error,
+  not a silently wrong key.
+- Commit the generated file so the whole team uses the same constants. Do not edit it by hand.
+- Project Settings → PLAYTEST.FUN lists each playtest and its goals, sets the *Playtest Id*, and warns
+  when the generated file is out of date (with a *Generate again* button).
+- The output path, namespace and class name are options there, saved to
+  `ProjectSettings/PlaytestFunEditorSettings.asset`. A file that PLAYTEST.FUN did not write is never
+  overwritten.
+
+### Send goals
+
+A goal without a target: call it once, when the player reaches it.
+
+```csharp
+using PlaytestFunSdk;
+
+void OnTutorialFinished() => PlaytestFun.Instance?.Goal(PlaytestFunGoals.FinishTutorial);
+```
+
+A goal with a target: send the player's **current total**, not the increment. Calling it every frame
+is fine; pending values collapse to the highest one, so no request storm.
+
+```csharp
+int monstersKilled;
+
+void OnMonsterKilled()
+{
+    monstersKilled++;
+    PlaytestFun.Instance?.Goal(PlaytestFunGoals.Kill1000Monster, monstersKilled);
+}
+```
+
+If the goal has no target on playtest.fun, send it once when it is reached instead:
+`if (monstersKilled == 1000) PlaytestFun.Instance?.Goal(PlaytestFunGoals.Kill1000Monster);`
+
+### What happens to a goal
+
+- `Goal` returns `true` when the goal is queued. It is written to disk and retried until delivered,
+  so a goal reached offline or right before a crash still arrives.
+- Before `SetSteamId`, goals wait in the queue and go out once the id is known.
+- If the player is **not accepted** into a playtest of this game (or their Steam account is not linked
+  on playtest.fun), goals are never counted. The SDK learns this from the server when the session
+  starts; from then on `Goal` returns `false` and sends nothing, and goals queued before that are
+  dropped without a request. Other events (test results, crashes) still go out. Play time
+  heartbeats slow down to one every 5 minutes, so a player accepted mid-session is picked up.
+- `false` is also returned when the SDK is not running: no game key, a rejected key, or the Editor
+  with *Run In Editor* off. Use `?.` because `Instance` is null until the SDK has started.
+- While playing in the Editor, the `PlaytestFun` object's Inspector shows *Accepted into playtest*,
+  the events not sent yet, and the last HTTP status.
 
 ## Platforms
 

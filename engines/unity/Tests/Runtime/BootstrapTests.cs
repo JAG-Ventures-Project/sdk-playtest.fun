@@ -47,6 +47,20 @@ namespace PlaytestFunSdk.Tests
         }
 
         [UnityTest]
+        public IEnumerator SendsNothingInTheEditorWhenRunInEditorIsOff()
+        {
+            settings.runInEditor = false;
+            var sdk = PlaytestFun.Bootstrap(settings);
+            Assert.IsNotNull(sdk, "the instance exists so game code needs no Editor checks");
+            Assert.AreSame(sdk, PlaytestFun.Instance);
+            Assert.IsFalse(sdk.IsRunning);
+            Assert.IsFalse(sdk.SetSteamId(76561198000000000ul));
+            Assert.IsFalse(sdk.Goal("finish_tutorial"));
+            Assert.IsEmpty(sdk.GetStats().SessionId, "no native session was started");
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator DoesNotStartWithoutGameKey()
         {
             settings.gameKey = "";

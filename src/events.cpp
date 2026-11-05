@@ -139,6 +139,11 @@ void PersistEvents(State& s) {
     else if (!WriteFileAtomic(EventsPath(s), text)) s.Log(LogLevel::Warn, "could not write the event queue");
 }
 
+bool GoalNotCountedLocked(const State& s, const QueuedEvent& ev, const std::string& steam_id) {
+    // Only for the current player, whose status the last check or heartbeat reported.
+    return ev.type == "GOAL_PROGRESS" && s.stats.player_accepted == 0 && !steam_id.empty() && steam_id == s.steam_id;
+}
+
 Clock::duration DrainEvents(State& s, Clock::time_point deadline, int max_count) {
     for (int sent = 0; sent < max_count; ++sent) {
         const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - Clock::now()).count();
@@ -146,13 +151,24 @@ Clock::duration DrainEvents(State& s, Clock::time_point deadline, int max_count)
 
         QueuedEvent ev;
         std::string steam_id;
+        bool dropped = false;
         {
             std::lock_guard<std::mutex> lk(s.mu);
             if (s.events.empty() || s.disabled) return Clock::duration::zero();
             ev = s.events.front();
             steam_id = ev.steam_id.empty() ? s.steam_id : ev.steam_id;
             if (steam_id.empty()) return Clock::duration::zero();  // waits for SetSteamId
-            s.in_flight = ev.event_id;
+            dropped = GoalNotCountedLocked(s, ev, steam_id);
+            if (dropped) {
+                s.events.pop_front();  // queued before the player check came back
+                s.events_dirty = true;
+            } else {
+                s.in_flight = ev.event_id;
+            }
+        }
+        if (dropped) {
+            s.Log(LogLevel::Debug, "goal dropped: the player is not accepted into this game's playtest");
+            continue;
         }
 
         const int timeout = static_cast<int>(std::min<long long>(kRequestTimeoutMs, left));

@@ -19,7 +19,7 @@
 #  define PTF_API
 #endif
 
-#define PTF_VERSION "1.1.0"
+#define PTF_VERSION "1.3.0"
 
 #ifdef __cplusplus
 extern "C" {
@@ -84,7 +84,8 @@ PTF_API void ptf_set_paused(int paused);
 /* Free-form JSON object sent as session "data" (max 16 KB). */
 PTF_API int ptf_set_session_data(const char* json_object);
 
-/* Events: queued (on disk with storage_dir), retried until delivered. Return 1 if queued. */
+/* Events: queued (on disk with storage_dir), retried until delivered. Return 1 if queued.
+   Goals return 0 while the player is known not to be accepted (ptf_stats.player_accepted == 0). */
 PTF_API int ptf_goal(const char* key);                    /* goal without a target: done */
 PTF_API int ptf_goal_value(const char* key, double value); /* goal with a target */
 PTF_API int ptf_test_result(int test_id, int passed, const char* message /* nullable */);

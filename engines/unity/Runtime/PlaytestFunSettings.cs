@@ -11,6 +11,8 @@ namespace PlaytestFunSdk
 
         [Tooltip("Start the SDK before the first scene loads. Off: add the PlaytestFun component to a scene yourself.")]
         public bool startAutomatically = true;
+        [Tooltip("Off: in the Editor the SDK object exists but sends nothing, so your own test runs never reach playtest.fun. Builds always run.")]
+        public bool runInEditor = true;
         [Tooltip("phub_gk_... game key. Never a studio key.")]
         public string gameKey = "";
         [Tooltip("Needed only when a player is in more than one playtest of the game.")]

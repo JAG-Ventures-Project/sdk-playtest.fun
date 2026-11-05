@@ -68,6 +68,8 @@ public:
     bool Goal(const std::string& key);
     // Goal with a target: level reached. Repeated calls collapse to the highest pending value.
     bool Goal(const std::string& key, double value);
+    // Both return false and send nothing while the server says the player is not accepted into
+    // a playtest of this game (Stats::player_accepted == 0): such goals are never counted.
 
     bool TestResult(int test_id, bool passed, const std::string& message = {}, const std::string& reward = {});
 

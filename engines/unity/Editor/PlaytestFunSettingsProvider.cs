@@ -2,7 +2,9 @@
 // creating it on first open.
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -120,7 +122,9 @@ namespace PlaytestFunSdk.Editor
                 if (goals.Length == 0)
                     EditorGUILayout.LabelField("No goals yet. Add them on playtest.fun, then fetch again.", EditorStyles.miniLabel);
                 foreach (var g in goals)
-                    EditorGUILayout.LabelField(g.Key, g.Target != 0 ? $"{g.Title} (target {g.Target})" : g.Title);
+                    DrawGoal(g);
+                if (goals.Length > 0 && goals.All(g => g.Target == 0))
+                    EditorGUILayout.LabelField("No goal has a target on the server. Set targets on playtest.fun, then fetch again.", EditorStyles.miniLabel);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -137,6 +141,24 @@ namespace PlaytestFunSdk.Editor
                     if (GUILayout.Button("Generate goal constants"))
                         Generate(pt);
                 }
+            }
+        }
+
+        static GUIStyle targetStyle;
+
+        // key | title | target, the target right-aligned so the column lines up.
+        static void DrawGoal(Goal g)
+        {
+            if (targetStyle == null)
+                targetStyle = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleRight };
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.SelectableLabel(g.Key, GUILayout.Width(EditorGUIUtility.labelWidth),
+                                                GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                EditorGUILayout.LabelField(g.Title, GUILayout.MinWidth(60));
+                var target = g.Target != 0 ? "Target: " + g.Target.ToString("0.##", CultureInfo.InvariantCulture) : "no target";
+                using (new EditorGUI.DisabledScope(g.Target == 0))
+                    EditorGUILayout.LabelField(target, targetStyle, GUILayout.Width(110));
             }
         }
 

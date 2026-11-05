@@ -28,14 +28,18 @@ struct Mock final : ptf::Transport {
     std::vector<ptf::HttpRequest> calls;
     int session_status = 200;
     int event_status = 200;
+    std::string player_body =
+        R"({"success":true,"data":{"steamId":"76561198000000000","linked":true,"accepted":true,"playtests":[{"accepted":false}]}})";
     std::string session_body =
         R"({"success":true,"data":{"accepted":true,"sessionPlaytimeSeconds":12.5,"totalPlaytimeSeconds":99.25}})";
 
+    std::atomic<int> get_delay_ms{0};
+
     ptf::HttpResponse Send(const ptf::HttpRequest& r) override {
+        if (r.method == "GET" && get_delay_ms > 0) std::this_thread::sleep_for(std::chrono::milliseconds(get_delay_ms));
         std::lock_guard<std::mutex> lk(mu);
         calls.push_back(r);
-        if (r.method == "GET")
-            return {200, R"({"success":true,"data":{"steamId":"76561198000000000","linked":true,"accepted":true,"playtests":[{"accepted":false}]}})"};
+        if (r.method == "GET") return {200, player_body};
         if (r.url.find("/sdk/events") != std::string::npos)
             return {event_status, event_status == 404 ? R"({"success":false,"error":{"code":"GOAL_NOT_FOUND"}})"
                                                       : R"({"success":true,"data":{"accepted":true}})"};
@@ -327,6 +331,47 @@ static void TestEventRejectedIsDropped() {
     CHECK(client.GetStats().pending_events == 0);
 }
 
+static size_t GoalEvents(Mock& m) {
+    size_t n = 0;
+    for (auto& e : m.Events())
+        if (Has(e.body, "GOAL_PROGRESS")) ++n;
+    return n;
+}
+
+static void TestGoalsOfAPlayerNotAcceptedAreDropped() {
+    auto mock = std::make_shared<Mock>();
+    mock->player_body = R"({"success":true,"data":{"linked":true,"accepted":false}})";
+    mock->session_status = 403;
+    mock->session_body = R"({"success":false,"error":{"code":"PLAYER_NOT_IN_PLAYTEST"}})";
+    ptf::Client client(BaseConfig(mock));
+
+    CHECK(client.Goal("finish_tutorial"));  // status not known yet: queued
+    CHECK(client.TestResult(3, true));
+    client.SetSteamId(76561198000000000ull);
+    CHECK(WaitEvents(*mock, 1));  // the test result; the goal is dropped before it is sent
+    for (int i = 0; i < 100 && client.GetStats().pending_events; ++i)
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    const ptf::Stats s = client.GetStats();
+    CHECK(s.player_linked == 1 && s.player_accepted == 0);
+    CHECK(s.pending_events == 0);
+    CHECK(GoalEvents(*mock) == 0);
+    CHECK(mock->calls[0].method == "GET");  // checked before any event went out
+
+    CHECK(!client.Goal("finish_tutorial"));
+    CHECK(!client.Goal("collect_points", 5));
+    CHECK(client.TestResult(4, false));  // other events still go out
+    CHECK(WaitEvents(*mock, 2));
+    CHECK(GoalEvents(*mock) == 0);
+
+    // Another player: not known yet, so goals queue again (the slow check keeps it unknown here).
+    mock->get_delay_ms = 500;
+    CHECK(client.SetSteamId(76561198000000001ull));
+    CHECK(client.Goal("finish_tutorial"));
+    CHECK(client.GetStats().player_accepted == -1);
+    client.Shutdown();
+}
+
 static void TestEventQueueSurvivesRestart() {
     const fs::path dir = fs::temp_directory_path() / "ptf_tests_events";
     std::error_code ec;
@@ -376,6 +421,7 @@ int main() {
     TestJsonAndSessionId();
     TestEvents();
     TestEventRejectedIsDropped();
+    TestGoalsOfAPlayerNotAcceptedAreDropped();
     TestEventQueueSurvivesRestart();
     TestHeartbeatAndShutdown();
     TestFlushAndPause();

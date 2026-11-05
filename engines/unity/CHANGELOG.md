@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0] - 2026-11-05
+
+- Goals of a player who is not accepted into a playtest of the game (or not linked) are no longer sent:
+  `Goal` returns `false`, and goals queued before the player check came back are dropped without a request.
+  The player is checked before the first goal goes out. Native core 1.3.0 (Windows plugin rebuilt).
+- *Run In Editor* setting: off, the SDK sends nothing from Editor Play mode. `PlaytestFun.Instance` still
+  exists and every call returns `false`. Builds always run.
+- `PlaytestFun.IsRunning`.
+- Project Settings > PLAYTEST.FUN lists each goal as key, title and target ("no target" when the server sends none).
+- README: a Goals section on generating the constants, sending goals and what happens to them.
+
 ## [1.2.2] - 2026-11-05
 
 - Goal constants are generated in the `PlaytestFunSdk` namespace by default. Projects that already saved

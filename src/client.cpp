@@ -102,6 +102,9 @@ void Worker(std::shared_ptr<State> sp, std::promise<void> done) {
             }
         }
         if (drain) {
+            // Know whether the player counts before the first goal goes out (goals of a player
+            // who is not accepted are dropped locally, see DrainEvents).
+            if (can_send && check && !beat) CheckPlayer(s, steam_id);
             last_drain = Clock::now();
             const Clock::duration again = can_send ? DrainEvents(s, Far(), kEventsPerPass) : Clock::duration::zero();
             next_events = again == Clock::duration::zero() ? Far() : Clock::now() + again;
@@ -276,6 +279,7 @@ bool Client::SetSteamId(const std::string& steam_id64) {
         if (s.steam_id == steam_id64) return true;
         s.steam_id = steam_id64;
         s.player_checked = false;
+        s.stats.player_linked = s.stats.player_accepted = -1;  // another player: not known yet
         s.wake = true;        // first beat right away
         s.event_kick = true;  // events waiting for the id
     }
@@ -367,6 +371,7 @@ bool Client::Enqueue(detail::QueuedEvent&& ev) {
     {
         std::lock_guard<std::mutex> lk(s.mu);
         if (s.stopping || s.disabled) return false;
+        if (detail::GoalNotCountedLocked(s, ev, s.steam_id)) return false;  // would only be rejected
         ev.steam_id = s.steam_id;
         detail::EnqueueEventLocked(s, std::move(ev));
     }
