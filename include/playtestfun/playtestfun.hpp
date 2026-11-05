@@ -63,6 +63,7 @@ public:
 
     // Events: queued (on disk with storage_dir), sent in order with an event_id, retried until
     // delivered. They wait for the SteamID; a crash before Steam starts goes out once it does.
+    // The queue holds at most 1000 events and 1 MB; the oldest are dropped first, crashes last.
 
     // Goal without a target: done.
     bool Goal(const std::string& key);
@@ -74,7 +75,8 @@ public:
     bool TestResult(int test_id, bool passed, const std::string& message = {}, const std::string& reward = {});
 
     // Written to disk before returning, so it survives the process dying right after.
-    // Same fingerprint while still queued is sent once.
+    // Same fingerprint while still queued is sent once. At most 20 crashes wait in the queue;
+    // more return false without touching the disk, so a crash storm never stalls the caller.
     bool Crash(const std::string& fingerprint, const std::string& message = {}, const std::string& stack = {},
                const JsonObject& hardware = {});
 

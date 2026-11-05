@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1] - 2026-11-05
+
+- The event queue is capped at 1 MB as well as 1000 events (oldest dropped first, crashes last), and
+  at 20 crashes. Past that, `Crash` returns `false` without writing the file, so a storm of distinct
+  exceptions with *Report Exceptions* on no longer rewrites a growing queue file on the main thread.
+  Native core 1.4.0 (Windows plugin rebuilt).
+
 ## [1.5.0] - 2026-11-05
 
 - *Send Log After Crash* setting (builds only, off by default): when a run ends without quitting

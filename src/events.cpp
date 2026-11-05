@@ -11,6 +11,10 @@ namespace ptf::detail {
 namespace {
 
 constexpr size_t kMaxQueued = 1000;
+// The queue file is rewritten whole, and a crash rewrites it on the caller's thread: keep it small.
+constexpr size_t kMaxQueuedBytes = 1024 * 1024;
+constexpr size_t kMaxQueuedCrashes = 20;  // the first ones; more distinct crashes add little
+constexpr size_t kEventOverhead = 200;    // envelope around data in the file, roughly
 constexpr const char* kEventsFile = "playtestfun_events.jsonl";
 constexpr std::chrono::seconds kMaxEventBackoff{60};
 
@@ -66,6 +70,36 @@ fs::path EventsPath(const State& s) {
     return s.storage / kEventsFile;
 }
 
+size_t Bytes(const QueuedEvent& e) {
+    return kEventOverhead + e.data.size();
+}
+
+// Drops events until the queue fits: crashes over the cap (newest first), then the oldest other
+// events, then the oldest crashes. The event on the wire stays.
+void TrimLocked(State& s) {
+    size_t bytes = 0, crashes = 0;
+    for (const auto& e : s.events) {
+        bytes += Bytes(e);
+        if (e.type == "CRASH") ++crashes;
+    }
+    auto drop = [&](size_t i) {
+        bytes -= Bytes(s.events[i]);
+        if (s.events[i].type == "CRASH") --crashes;
+        s.events.erase(s.events.begin() + static_cast<std::ptrdiff_t>(i));
+        s.events_dirty = true;
+    };
+    auto droppable = [&](size_t i) { return s.events[i].event_id != s.in_flight; };
+
+    for (size_t i = s.events.size(); crashes > kMaxQueuedCrashes && i-- > 0;)
+        if (s.events[i].type == "CRASH" && droppable(i)) drop(i);
+    for (bool crash_pass : {false, true}) {
+        for (size_t i = 0; (s.events.size() > kMaxQueued || bytes > kMaxQueuedBytes) && i < s.events.size();) {
+            if ((s.events[i].type == "CRASH") == crash_pass && droppable(i)) drop(i);
+            else ++i;
+        }
+    }
+}
+
 }  // namespace
 
 bool EnqueueEventLocked(State& s, QueuedEvent ev) {
@@ -83,14 +117,14 @@ bool EnqueueEventLocked(State& s, QueuedEvent ev) {
         }
         if (!ev.fingerprint.empty() && q.fingerprint == ev.fingerprint) return true;
     }
-    if (s.events.size() >= kMaxQueued) {
-        // Drop the oldest that isn't on the wire.
-        const size_t i = !s.events.empty() && s.events.front().event_id == s.in_flight ? 1 : 0;
-        if (i < s.events.size()) s.events.erase(s.events.begin() + static_cast<std::ptrdiff_t>(i));
-    }
+    if (ev.type == "CRASH" &&
+        static_cast<size_t>(std::count_if(s.events.begin(), s.events.end(),
+                                          [](const QueuedEvent& q) { return q.type == "CRASH"; })) >= kMaxQueuedCrashes)
+        return false;  // nothing changes, so a crash storm never rewrites the file
     s.events.push_back(std::move(ev));
     s.events_dirty = true;
     s.event_kick = true;
+    TrimLocked(s);
     return true;
 }
 
@@ -116,7 +150,7 @@ void LoadEvents(State& s) {
 
     // Older events go first.
     for (auto it = loaded.rbegin(); it != loaded.rend(); ++it) s.events.push_front(std::move(*it));
-    while (s.events.size() > kMaxQueued) s.events.pop_front();
+    TrimLocked(s);
     s.event_kick = true;
     s.Log(LogLevel::Debug, "loaded " + std::to_string(loaded.size()) + " queued event(s) from disk");
 }

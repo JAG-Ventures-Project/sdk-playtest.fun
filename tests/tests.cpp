@@ -416,8 +416,56 @@ static void TestEventQueueSurvivesRestart() {
     fs::remove_all(dir, ec);
 }
 
+// A crash storm with distinct fingerprints: capped, and the capped calls never rewrite the file.
+static void TestQueueLimits() {
+    const fs::path dir = fs::temp_directory_path() / "ptf_tests_limits";
+    std::error_code ec;
+    fs::remove_all(dir, ec);
+    auto mock = std::make_shared<Mock>();
+    ptf::Config c = BaseConfig(mock);
+    c.storage_dir = dir.string();
+    c.shutdown_timeout_ms = 100;
+    const fs::path file = dir / "playtestfun_events.jsonl";
+    {
+        ptf::Client client(c);  // no SteamID: everything stays queued
+        const std::string stack(15000, 's');
+        for (int i = 0; i < 20; ++i) CHECK(client.Crash("Index " + std::to_string(i) + "@Update", "m", stack));
+        const auto written = fs::last_write_time(file, ec);
+        const auto size = fs::file_size(file, ec);
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        for (int i = 20; i < 200; ++i) CHECK(!client.Crash("Index " + std::to_string(i) + "@Update", "m", stack));
+        CHECK(client.Crash("Index 3@Update"));  // already queued: still true
+        CHECK(fs::last_write_time(file, ec) == written && fs::file_size(file, ec) == size);
+        CHECK(client.GetStats().pending_events == 20);
+
+        // Bulky events: the file stays under 1 MB, oldest non-crash dropped first, crashes kept.
+        for (int i = 0; i < 1500; ++i)
+            client.Event("GAME_STARTED", "DONE", ptf::JsonObject().Set("n", i).Set("pad", std::string(1000, 'p')));
+        const auto st = client.GetStats();
+        CHECK(st.pending_events > 20 && st.pending_events < 1000);
+        client.Shutdown();
+        CHECK(fs::file_size(file, ec) <= 1024 * 1024 + 64 * 1024);
+    }
+    std::string text;
+    {
+        FILE* f = std::fopen(file.string().c_str(), "rb");
+        CHECK(f != nullptr);
+        if (f) {
+            char buf[65536];
+            for (size_t n; (n = std::fread(buf, 1, sizeof buf, f)) > 0;) text.append(buf, n);
+            std::fclose(f);
+        }
+    }
+    size_t crashes = 0;
+    for (size_t at = 0; (at = text.find("\"CRASH\"", at)) != std::string::npos; ++at) ++crashes;
+    CHECK(crashes == 20);
+    CHECK(Has(text, R"("n":1499)") && !Has(text, R"("n":0,)"));
+    fs::remove_all(dir, ec);
+}
+
 int main() {
     TestUtil();
+    TestQueueLimits();
     TestJsonAndSessionId();
     TestEvents();
     TestEventRejectedIsDropped();

@@ -373,7 +373,7 @@ bool Client::Enqueue(detail::QueuedEvent&& ev) {
         if (s.stopping || s.disabled) return false;
         if (detail::GoalNotCountedLocked(s, ev, s.steam_id)) return false;  // would only be rejected
         ev.steam_id = s.steam_id;
-        detail::EnqueueEventLocked(s, std::move(ev));
+        if (!detail::EnqueueEventLocked(s, std::move(ev))) return false;
     }
     s.cv.notify_one();
     return true;

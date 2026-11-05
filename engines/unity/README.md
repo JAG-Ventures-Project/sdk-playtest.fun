@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.0
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.1
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.0"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.5.1"
 ```
 
-Drop `#v1.5.0` to track `main`.
+Drop `#v1.5.1` to track `main`.
 
 ## Use
 
@@ -133,6 +133,12 @@ Both are off by default; turn them on in Project Settings → PLAYTEST.FUN.
 Report your own crashes with `PlaytestFun.Instance?.Crash("SaveCorrupt@LoadGame", message, stack)`.
 Crash events are written to disk before the call returns, and they are sent for every player,
 accepted or not.
+
+The queue (on disk in `persistentDataPath/playtestfun/`, the same in memory) holds at most 1000
+events and 1 MB; when full, the oldest are dropped first and crashes last. At most 20 crashes wait
+at a time: past that, `Crash` returns `false` and touches nothing, so an exception with a changing
+message thrown every frame cannot stall the game. Queuing is a lock and a list append; writing the
+file and sending run on the SDK's own thread, except that a crash writes the file before returning.
 
 ## Platforms
 
