@@ -24,8 +24,13 @@ namespace PlaytestFunSdk.Editor
                 "{",
                 $"    public const string PlaytestId = \"{Escape(playtest.id)}\";",
             };
+            if (!string.IsNullOrEmpty(playtest.versionLabel))
+            {
+                body.Add("    /// <summary>Version label of the playtest's build.</summary>");
+                body.Add($"    public const string VersionLabel = \"{Escape(playtest.versionLabel)}\";");
+            }
 
-            var used = new HashSet<string> { "PlaytestId", className };
+            var used = new HashSet<string> { "PlaytestId", "VersionLabel", className };
             foreach (var goal in playtest.goals ?? new Goal[0])
             {
                 if (string.IsNullOrEmpty(goal.Key)) continue;
@@ -71,8 +76,26 @@ namespace PlaytestFunSdk.Editor
             AssetDatabase.ImportAsset(path);
             opts.lastGeneratedPath = path;
             opts.Save();
+            if (opts.buildVersionFromPlaytest) ApplyBuildVersion(playtest);
             return null;
         }
+
+        /// <summary>Sets Build Version in the shipped settings to the playtest's version label.</summary>
+        static void ApplyBuildVersion(Playtest playtest)
+        {
+            var settings = PlaytestFunSettingsProvider.GetOrCreateSettings();
+            if (string.IsNullOrEmpty(playtest.versionLabel) || settings.buildVersion == playtest.versionLabel) return;
+            Undo.RecordObject(settings, "Set PLAYTEST.FUN build version");
+            settings.buildVersion = playtest.versionLabel;
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>Why Build Version does not match the playtest the constants were made for, or null.</summary>
+        internal static string BuildVersionMismatch(string buildVersion, Playtest playtest) =>
+            playtest == null || string.IsNullOrEmpty(playtest.versionLabel) || buildVersion == playtest.versionLabel
+                ? null
+                : $"Build Version is \"{buildVersion}\" but the playtest's version label is \"{playtest.versionLabel}\".";
 
         internal static bool IsGenerated(string code) => code != null && code.TrimStart('﻿').StartsWith(Marker);
 

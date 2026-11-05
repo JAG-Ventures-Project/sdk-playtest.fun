@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0] - 2026-11-05
+
+- Generating the goal constants also sets *Build Version* to the playtest's version label, and the
+  class gets a `VersionLabel` constant. The settings page warns when Build Version differs; turn off
+  *Build Version From Playtest* to set it yourself.
+- The goal constants are the `PlaytestFunSdk.Goals` class in `Assets/PlaytestFun/Goals.cs` by default.
+  Projects that already saved generation options keep theirs.
+
 ## [1.3.0] - 2026-11-05
 
 - Goals of a player who is not accepted into a playtest of the game (or not linked) are no longer sent:

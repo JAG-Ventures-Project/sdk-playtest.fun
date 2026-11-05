@@ -5,16 +5,16 @@
 Window → Package Manager → **+** → *Add package from git URL*:
 
 ```
-https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.3.0
+https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.4.0
 ```
 
 Or add it to `Packages/manifest.json`:
 
 ```json
-"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.3.0"
+"fun.playtest.sdk": "https://github.com/JAG-Ventures-Project/sdk-playtest.fun.git?path=/engines/unity#v1.4.0"
 ```
 
-Drop `#v1.3.0` to track `main`.
+Drop `#v1.4.0` to track `main`.
 
 ## Use
 
@@ -39,15 +39,17 @@ Drop `#v1.3.0` to track `main`.
 ### Generate the goal constants
 
 Add the goals to the playtest on playtest.fun, then run **Tools → PLAYTEST.FUN → Fetch and Generate Goals**.
-It writes `Assets/PlaytestFun/PlaytestFunGoals.cs` for the *Playtest Id* (or the game's only playtest),
+It writes `Assets/PlaytestFun/Goals.cs` for the *Playtest Id* (or the game's only playtest),
 with one constant per goal key:
 
 ```csharp
 namespace PlaytestFunSdk
 {
-    public static class PlaytestFunGoals
+    public static class Goals
     {
         public const string PlaytestId = "11111111-...";
+        /// <summary>Version label of the playtest's build.</summary>
+        public const string VersionLabel = "f1";
 
         /// <summary>Reach the beach</summary>
         public const string ReachTheBeach = "reach_the_beach";
@@ -64,6 +66,9 @@ namespace PlaytestFunSdk
 - Commit the generated file so the whole team uses the same constants. Do not edit it by hand.
 - Project Settings → PLAYTEST.FUN lists each playtest and its goals, sets the *Playtest Id*, and warns
   when the generated file is out of date (with a *Generate again* button).
+- Generating also sets *Build Version* in Project Settings → PLAYTEST.FUN to the playtest's version
+  label (`f1` above), so session ids and crashes are tagged with the build under test. The settings
+  page warns when the two differ. Turn off *Build Version From Playtest* to set it yourself.
 - The output path, namespace and class name are options there, saved to
   `ProjectSettings/PlaytestFunEditorSettings.asset`. A file that PLAYTEST.FUN did not write is never
   overwritten.
@@ -75,7 +80,7 @@ A goal without a target: call it once, when the player reaches it.
 ```csharp
 using PlaytestFunSdk;
 
-void OnTutorialFinished() => PlaytestFun.Instance?.Goal(PlaytestFunGoals.FinishTutorial);
+void OnTutorialFinished() => PlaytestFun.Instance?.Goal(Goals.FinishTutorial);
 ```
 
 A goal with a target: send the player's **current total**, not the increment. Calling it every frame
@@ -87,12 +92,12 @@ int monstersKilled;
 void OnMonsterKilled()
 {
     monstersKilled++;
-    PlaytestFun.Instance?.Goal(PlaytestFunGoals.Kill1000Monster, monstersKilled);
+    PlaytestFun.Instance?.Goal(Goals.Kill1000Monster, monstersKilled);
 }
 ```
 
 If the goal has no target on playtest.fun, send it once when it is reached instead:
-`if (monstersKilled == 1000) PlaytestFun.Instance?.Goal(PlaytestFunGoals.Kill1000Monster);`
+`if (monstersKilled == 1000) PlaytestFun.Instance?.Goal(Goals.Kill1000Monster);`
 
 ### What happens to a goal
 

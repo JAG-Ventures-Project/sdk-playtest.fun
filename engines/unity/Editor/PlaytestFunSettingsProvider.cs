@@ -187,6 +187,7 @@ namespace PlaytestFunSdk.Editor
             EditorGUILayout.LabelField("Goal constants", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(options.FindProperty(nameof(opts.fetchOnOpen)));
+            EditorGUILayout.PropertyField(options.FindProperty(nameof(opts.buildVersionFromPlaytest)), new GUIContent("Build Version From Playtest"));
             EditorGUILayout.PropertyField(options.FindProperty(nameof(opts.goalsPath)), new GUIContent("Output Path"));
             EditorGUILayout.PropertyField(options.FindProperty(nameof(opts.goalsNamespace)), new GUIContent("Namespace"));
             EditorGUILayout.PropertyField(options.FindProperty(nameof(opts.goalsClassName)), new GUIContent("Class Name"));

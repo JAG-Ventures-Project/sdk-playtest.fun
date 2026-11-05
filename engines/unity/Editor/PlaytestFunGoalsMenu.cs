@@ -63,8 +63,16 @@ namespace PlaytestFunSdk.Editor
                 regenerate = PlaytestFunCodegen.Pick(PlaytestFunServer.Cached(settings.gameKey)?.data, settings.playtestId, out _);
                 return $"The goal constants are still at {old}; the output path is now {path}.";
             }
-            return PlaytestFunCodegen.Staleness(code, PlaytestFunServer.Cached(settings.gameKey)?.data,
-                                                settings.playtestId, opts.Namespace, opts.ClassName, out regenerate);
+            var playtests = PlaytestFunServer.Cached(settings.gameKey)?.data;
+            var why = PlaytestFunCodegen.Staleness(code, playtests, settings.playtestId, opts.Namespace, opts.ClassName, out regenerate);
+            if (why != null || code == null || !opts.buildVersionFromPlaytest) return why;
+
+            // Constants are current: also check Build Version against their playtest.
+            var id = PlaytestFunCodegen.ReadPlaytestId(code);
+            var forFile = playtests == null ? null : System.Array.Find(playtests, p => p.id == id);
+            why = PlaytestFunCodegen.BuildVersionMismatch(settings.buildVersion, forFile);
+            if (why != null) regenerate = forFile;
+            return why;
         }
     }
 }

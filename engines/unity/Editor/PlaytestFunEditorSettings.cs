@@ -10,12 +10,14 @@ namespace PlaytestFunSdk.Editor
     [FilePath("ProjectSettings/PlaytestFunEditorSettings.asset", FilePathAttribute.Location.ProjectFolder)]
     sealed class PlaytestFunEditorSettings : ScriptableSingleton<PlaytestFunEditorSettings>
     {
-        internal const string DefaultPath = "Assets/PlaytestFun/PlaytestFunGoals.cs";
+        internal const string DefaultPath = "Assets/PlaytestFun/Goals.cs";
         internal const string DefaultNamespace = "PlaytestFunSdk";
-        internal const string DefaultClassName = "PlaytestFunGoals";
+        internal const string DefaultClassName = "Goals";
 
         [Tooltip("Fetch playtests and goals once per editor session when this page opens.")]
         public bool fetchOnOpen = true;
+        [Tooltip("On: generating also sets Build Version (Project Settings > PLAYTEST.FUN) to the playtest's version label, so sessions and crashes are tagged with it.")]
+        public bool buildVersionFromPlaytest = true;
         [Tooltip("Where the goal constants are written. Must be under Assets/ and end in .cs.")]
         public string goalsPath = DefaultPath;
         [Tooltip("Namespace of the generated class. Empty = global namespace.")]

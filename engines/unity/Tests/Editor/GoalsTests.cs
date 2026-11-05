@@ -65,7 +65,7 @@ namespace PlaytestFunSdk.Tests
         public void GeneratesOneConstantPerGoal()
         {
             var code = PlaytestFunCodegen.Generate(PlaytestFunServer.Parse(Reply).data[0]);
-            StringAssert.Contains("public static class PlaytestFunGoals", code);
+            StringAssert.Contains("public static class Goals", code);
             StringAssert.Contains("public const string PlaytestId = \"11111111-2222-4333-8444-555555555555\";", code);
             StringAssert.Contains("public const string CollectPoints = \"collect_points\";", code);
             StringAssert.Contains("public const double CollectPointsTarget = 120;", code);
@@ -127,7 +127,7 @@ namespace PlaytestFunSdk.Tests
         {
             var code = PlaytestFunCodegen.Generate(Pt("x", "a"));
             StringAssert.Contains("namespace PlaytestFunSdk\n{\n", code);
-            StringAssert.Contains("    public static class PlaytestFunGoals\n", code);
+            StringAssert.Contains("    public static class Goals\n", code);
         }
 
         [Test]
@@ -135,7 +135,7 @@ namespace PlaytestFunSdk.Tests
         {
             var code = PlaytestFunCodegen.Generate(Pt("x", "a"), "");
             StringAssert.DoesNotContain("namespace", code);
-            StringAssert.Contains("\npublic static class PlaytestFunGoals\n", code);
+            StringAssert.Contains("\npublic static class Goals\n", code);
         }
 
         [Test]
@@ -152,14 +152,36 @@ namespace PlaytestFunSdk.Tests
         }
 
         [Test]
+        public void GeneratesTheVersionLabel()
+        {
+            var pt = Pt("x", "version_label");
+            pt.versionLabel = "f1";
+            var code = PlaytestFunCodegen.Generate(pt);
+            StringAssert.Contains("public const string VersionLabel = \"f1\";", code);
+            StringAssert.Contains("VersionLabel2 = \"version_label\"", code, "a goal never shadows it");
+            StringAssert.DoesNotContain("VersionLabel =", PlaytestFunCodegen.Generate(Pt("x")), "omitted when the server sends none");
+        }
+
+        [Test]
+        public void BuildVersionMustMatchTheVersionLabel()
+        {
+            var pt = Pt("x");
+            pt.versionLabel = "f1";
+            Assert.IsNull(PlaytestFunCodegen.BuildVersionMismatch("f1", pt));
+            StringAssert.Contains("\"f1\"", PlaytestFunCodegen.BuildVersionMismatch("", pt));
+            Assert.IsNull(PlaytestFunCodegen.BuildVersionMismatch("1.0", Pt("x")), "no label: nothing to match");
+            Assert.IsNull(PlaytestFunCodegen.BuildVersionMismatch("1.0", null));
+        }
+
+        [Test]
         public void StalenessIsNullWhenCurrent()
         {
             var pts = new[] { Pt("p1", "a", "b") };
             var code = PlaytestFunCodegen.Generate(pts[0]).Replace("\n", "\r\n");  // line endings do not count
-            Assert.IsNull(PlaytestFunCodegen.Staleness(code, pts, "p1", PlaytestFunEditorSettings.DefaultNamespace, "PlaytestFunGoals", out var again));
+            Assert.IsNull(PlaytestFunCodegen.Staleness(code, pts, "p1", PlaytestFunEditorSettings.DefaultNamespace, "Goals", out var again));
             Assert.IsNull(again);
-            Assert.IsNull(PlaytestFunCodegen.Staleness(code, null, "", PlaytestFunEditorSettings.DefaultNamespace, "PlaytestFunGoals", out _), "nothing fetched");
-            Assert.IsNull(PlaytestFunCodegen.Staleness("// mine", pts, "p1", PlaytestFunEditorSettings.DefaultNamespace, "PlaytestFunGoals", out _), "not generated");
+            Assert.IsNull(PlaytestFunCodegen.Staleness(code, null, "", PlaytestFunEditorSettings.DefaultNamespace, "Goals", out _), "nothing fetched");
+            Assert.IsNull(PlaytestFunCodegen.Staleness("// mine", pts, "p1", PlaytestFunEditorSettings.DefaultNamespace, "Goals", out _), "not generated");
         }
 
         [Test]
@@ -167,9 +189,9 @@ namespace PlaytestFunSdk.Tests
         {
             var code = PlaytestFunCodegen.Generate(Pt("p1", "a"));
             var now = new[] { Pt("p1", "a", "b") };
-            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, now, "", PlaytestFunEditorSettings.DefaultNamespace, "PlaytestFunGoals", out var again));
+            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, now, "", PlaytestFunEditorSettings.DefaultNamespace, "Goals", out var again));
             Assert.AreSame(now[0], again);
-            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, new[] { Pt("p1", "a") }, "", "Ns", "PlaytestFunGoals", out _),
+            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, new[] { Pt("p1", "a") }, "", "Ns", "Goals", out _),
                              "namespace option changed");
         }
 
@@ -178,9 +200,9 @@ namespace PlaytestFunSdk.Tests
         {
             var code = PlaytestFunCodegen.Generate(Pt("p1", "a"));
             var pts = new[] { Pt("p1", "a"), Pt("p2", "c") };
-            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, pts, "p2", PlaytestFunEditorSettings.DefaultNamespace, "PlaytestFunGoals", out var again));
+            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, pts, "p2", PlaytestFunEditorSettings.DefaultNamespace, "Goals", out var again));
             Assert.AreSame(pts[1], again);
-            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, new[] { Pt("p3") }, "", PlaytestFunEditorSettings.DefaultNamespace, "PlaytestFunGoals", out again), "deleted");
+            Assert.IsNotNull(PlaytestFunCodegen.Staleness(code, new[] { Pt("p3") }, "", PlaytestFunEditorSettings.DefaultNamespace, "Goals", out again), "deleted");
             Assert.IsNull(again);
         }
 
