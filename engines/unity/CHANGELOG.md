@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.5.4] - 2026-11-06
+
+- Tests and README examples use made-up playtest ids, SteamIDs, user and device names instead of
+  real ones. No change to the SDK itself.
+
 ## [1.5.3] - 2026-11-05
 
 - *Send Log After Crash* drops the loaded-DLL list and symbol lookup noise that Unity writes on a
